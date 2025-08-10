@@ -76,5 +76,31 @@ service cloud.firestore {
     match /students/{document=**} {
       allow read: if request.auth != null;
     }
+
+    // Attendance submissions per module
+    match /attendance/{moduleId} {
+      // Allow authenticated users to read module attendance data
+      allow read: if request.auth != null;
+
+      match /submissions/{submissionId} {
+        // Allow authenticated users to read submissions (UI can filter as needed)
+        allow read: if request.auth != null;
+
+        // Students can create a submission only when:
+        // - They are authenticated
+        // - Their profile matches the submitted studentId and studentName
+        // - The referenced session exists, is for this module, and is not expired
+        allow create: if request.auth != null
+          && exists(/databases/$(database)/documents/students/$(request.auth.uid))
+          && get(/databases/$(database)/documents/students/$(request.auth.uid)).data.studentId == request.resource.data.studentId
+          && get(/databases/$(database)/documents/students/$(request.auth.uid)).data.name == request.resource.data.studentName
+          && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
+          && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.moduleId == moduleId
+          && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.expiresAt > request.time;
+
+        // Prevent updates and deletes to maintain auditability
+        allow update, delete: if false;
+      }
+    }
   }
 }
