@@ -15,6 +15,7 @@
 </head>
 <body>
 
+
     <header class="container">
         <nav>
             <div class="nav-left">
@@ -192,6 +193,7 @@ const auth = firebase.auth();
 // Ensure auth persistence
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 
+
 async function ensureStudentSignedIn(studentId) {
   const expectedEmail = `${studentId}@mywsu.ac.za`.toLowerCase();
   const current = auth.currentUser;
@@ -203,6 +205,27 @@ async function ensureStudentSignedIn(studentId) {
     await auth.signInWithEmailAndPassword(expectedEmail, 'testing');
   } catch (err) {
     throw new Error('Account not found or wrong credentials. Please contact admin.');
+=======
+// --- Student Auth Redirect ---
+function requireAuthOrRedirect() {
+  const unsub = auth.onAuthStateChanged((user) => {
+    if (user) {
+      // allow
+    } else {
+      window.location.replace('student-login.html');
+    }
+    unsub();
+  });
+}
+requireAuthOrRedirect();
+
+async function ensureStudentSignedIn(studentId) {
+  const expectedEmail = `${studentId}@mywsu.ac.za`.toLowerCase();
+  const current = auth.currentUser;
+  if (!current) throw new Error('You must be signed in to submit attendance.');
+  if (!current.email || current.email.toLowerCase() !== expectedEmail) {
+    throw new Error('Signed-in account does not match the provided student number.');
+
   }
 }
 
@@ -318,7 +341,11 @@ attendanceForm.addEventListener('submit', async (e) => {
     }
     
     try {
+
         showLoading('Signing in...');
+=======
+        showLoading('Validating account...');
+
         await ensureStudentSignedIn(studentId);
         await ensureStudentProfile(studentId, studentName);
 
@@ -371,7 +398,7 @@ attendanceForm.addEventListener('submit', async (e) => {
             return;
         }
         
-        // Submit attendance
+        // Submit attendance to session registrations
         await db.collection('sessions')
             .doc(sessionDoc.id)
             .collection('registrations')
@@ -380,6 +407,17 @@ attendanceForm.addEventListener('submit', async (e) => {
                 studentId: studentId,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 moduleId: sessionData.moduleId
+            });
+
+        // Also record under attendance/{moduleId}/submissions for module-level tracking
+        await db.collection('attendance')
+            .doc(sessionData.moduleId)
+            .collection('submissions')
+            .add({
+                studentName: studentName,
+                studentId: studentId,
+                sessionId: sessionDoc.id,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         
         hideLoading();
@@ -418,6 +456,7 @@ function showLoading(message) {
 function hideLoading() {
     loadingOverlay.classList.add('hidden');
 }
+
 
   </script>
 </body>
