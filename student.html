@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edutend - Student Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+    <header class="container">
+        <nav>
+            <div class="nav-left">
+                <strong>EDUTEND</strong>
+            </div>
+            <div class="nav-right">
+                <a href="#" class="toggle" id="menu-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="32px" width="42px" viewBox="0 -960 960 960" fill="#fff">
+                        <g transform="scale(-1, 1) translate(-960, 0)">
+                            <path d="M180-390v-0h450v60H180Zm0-190v-40h600v60H180Z"/>
+                        </g>
+                    </svg>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="hero-text">
+            <h1>Welcome to Your Student Dashboard</h1>
+            <p>Manage your modules and submit attendance easily.</p>
+        </div>
+
+        <!-- Student Module Cards -->
+        <div class="card-grid" id="studentModules">
+            <div class="card yellow" data-module="hci2">
+                <div>
+                    <h2>HUMAN COMPUTER INTERACTION II</h2>
+                    <p>HCI </p>
+                    <p>Ms N. Mavuso</p>
+                </div>
+                <div class="btn-container">
+                    <button class="btn attendance-btn" data-module="hci2">Submit Attendance</button>
+                </div>
+            </div>
+
+            <div class="card blue" data-module="dev2">
+                <div>
+                    <h2>DEVELOPMENT SOFTWARE II</h2>
+                    <p>DEV</p>
+                    <p>Mr A. Mabovana</p>
+                </div>
+                <div class="btn-container">
+                    <button class="btn attendance-btn" data-module="dev2">Submit Attendance</button>
+                </div>
+            </div>
+
+            <div class="card purple" data-module="tep1">
+                <div>
+                    <h2>TECHNICAL PROGRAMMING I</h2>
+                    <p>TEP</p>
+                    <p>Mr P. Tamba Tamba</p>
+                </div>
+                <div class="btn-container">
+                    <button class="btn attendance-btn" data-module="tep1">Submit Attendance</button>
+                </div>
+            </div>
+
+            <div class="card sage" data-module="inf2">
+                <div>
+                    <h2>INFORMATION SYSTEMS II</h2>
+                    <p>INF</p>
+                    <p>Ms Ranga</p>
+                </div>
+                <div class="btn-container">
+                    <button class="btn attendance-btn" data-module="inf2">Submit Attendance</button>
+                </div>
+            </div>
+        </div>
+
+<!-- Attendance Form Overlay -->
+<div id="attendanceOverlay" class="modal-overlay hidden">
+    <div class="top-right-corner">
+        <button class="modal-close" id="closeOverlay"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg></button>
+    </div>
+     <h2>Submit Attendance</h2>
+    <div class="modal-content">
+
+       
+        <form id="attendanceForm">
+            <div class="form-group">
+                <label for="studentName" class="form-label">Full Name:</label>
+                <input type="text" id="studentName" class="form-input" required placeholder="Enter your full name">
+            </div>
+            
+            <div class="form-group">
+                <label for="studentId" class="form-label">Student ID:</label>
+                <input type="text" id="studentId" class="form-input" required placeholder="Enter your student ID">
+            </div>
+            
+            <div class="form-group">
+                <label for="sessionPin" class="form-label">Session PIN:</label>
+                <input type="text" id="sessionPinInput" class="form-input" required placeholder="Enter the 6-digit PIN">
+            </div>
+            
+            <div class="form-group">
+                <label for="moduleCode" class="form-label">Module:</label>
+                <input type="text" id="moduleCode" class="form-input" readonly>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary" id="submitAttendance">Submit Attendance</button>
+                <button type="button" class="btn btn-secondary" id="cancelAttendance">Cancel</button>
+            </div>
+            
+            <div id="formError" class="error-message"></div>
+            <div id="formSuccess" class="success-message"></div>
+        </form>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="overlay hidden">
+    <div class="overlay-content" style="width: fit-content;">
+        <img src="Rounded blocks.gif" alt="" style="width: 30px; height: 30px;">
+        <p id="overlay-description" style="margin-top: 10px;">Processing...</p>
+    </div>
+</div>
+
+
+    </main>
+
+    <footer class="container">
+        <div class="footer-content">
+
+            <div class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <button class="close-btn" id="closeSidebar" aria-label="Close Sidebar"><svg xmlns="http://www.w3.org/2000/svg" height="30px" viewBox="0 -960 960 960" width="30px" fill="#e3e3e3"><path d="m251.33-204.67-46.66-46.66L433.33-480 204.67-708.67l46.66-46.66L480-526.67l228.67-228.66 46.66 46.66L526.67-480l228.66 228.67-46.66 46.66L480-433.33 251.33-204.67Z"/></svg></button>
+  
+  <ul>
+    <li><a href="#" style="color: white;">MAIN MENU</a></li>
+    <li><a href="#" style="color: white;">Settings</a></li>
+    
+    
+  </ul>
+</div>
+
+   <!-- JavaScript for Student Dashboard -->
+  <script>
+// Sidebar toggle functionality
+const toggleButton = document.querySelector('.toggle');
+const sidebar = document.getElementById('sidebar');
+const closeButton = document.getElementById('closeSidebar');
+
+toggleButton.addEventListener('click', () => {
+  sidebar.classList.add('open');
+});
+
+closeButton.addEventListener('click', () => {
+  sidebar.classList.remove('open');
+});
+
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyB7XFyQgYQtSR8MIiQ4gWRbwNUbnSYKe5s",
+    authDomain: "hcitest-a31fe.firebaseapp.com",
+    projectId: "hcitest-a31fe",
+    storageBucket: "hcitest-a31fe.firebasestorage.app",
+    messagingSenderId: "1077426886441",
+    appId: "1:1077426886441:web:1e45dfc838b48e34f20938"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Module data mapping
+const moduleData = {
+    'hci2': {
+        name: 'HUMAN COMPUTER INTERACTION II',
+        code: 'HCI2001',
+        lecturer: 'Ms N. Mavuso'
+    },
+    'dev2': {
+        name: 'DEVELOPMENT SOFTWARE II', 
+        code: 'DEV2001',
+        lecturer: 'MrA. Mabovana'
+    },
+    'tep1': {
+        name: 'TECHNICAL PROGRAMMING I',
+        code: 'TEP1001', 
+        lecturer: 'Mr P. Tamba Tamba'
+    },
+    'inf2': {
+        name: 'INFORMATION SYSTEMS II',
+        code: 'INF2001',
+        lecturer: 'Ms Ranga'
+    }
+};
+
+// DOM Elements
+const attendanceOverlay = document.getElementById('attendanceOverlay');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const attendanceForm = document.getElementById('attendanceForm');
+const closeOverlay = document.getElementById('closeOverlay');
+const cancelAttendance = document.getElementById('cancelAttendance');
+const formError = document.getElementById('formError');
+const formSuccess = document.getElementById('formSuccess');
+
+let currentModule = null;
+
+// Event Listeners for attendance buttons
+document.querySelectorAll('.attendance-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const moduleId = e.target.dataset.module;
+        openAttendanceForm(moduleId);
+    });
+});
+
+// Open attendance form
+function openAttendanceForm(moduleId) {
+    currentModule = moduleId;
+    const module = moduleData[moduleId];
+    
+    document.getElementById('moduleCode').value = `${module.code} - ${module.name}`;
+    
+    // Clear previous form data
+    document.getElementById('studentName').value = '';
+    document.getElementById('studentId').value = '';
+    document.getElementById('sessionPinInput').value = '';
+    formError.textContent = '';
+    formSuccess.textContent = '';
+    
+    attendanceOverlay.classList.remove('hidden');
+}
+
+// Close overlay functions
+closeOverlay.addEventListener('click', closeAttendanceOverlay);
+cancelAttendance.addEventListener('click', closeAttendanceOverlay);
+
+function closeAttendanceOverlay() {
+    attendanceOverlay.classList.add('hidden');
+    currentModule = null;
+}
+
+// Close overlay when clicking outside
+attendanceOverlay.addEventListener('click', (e) => {
+    if (e.target === attendanceOverlay) {
+        closeAttendanceOverlay();
+    }
+});
+
+// Form submission
+attendanceForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const studentName = document.getElementById('studentName').value.trim();
+    const studentId = document.getElementById('studentId').value.trim();
+    const sessionPin = document.getElementById('sessionPinInput').value.trim();
+    
+    // Validation
+    if (!studentName || !studentId || !sessionPin) {
+        showError('Please fill in all required fields.');
+        return;
+    }
+    
+    if (sessionPin.length !== 6 || !sessionPin.match(/^\d{6}$/)) {
+        showError('Session PIN must be exactly 6 digits.');
+        return;
+    }
+    
+    try {
+        showLoading('Submitting attendance...');
+        
+        // Find active session with the provided PIN
+        const sessionsQuery = await db.collection('sessions')
+            .where('pin', '==', sessionPin)
+            .where('expiresAt', '>', new Date())
+            .get();
+        
+        if (sessionsQuery.empty) {
+            hideLoading();
+            showError('Invalid PIN or session has expired.');
+            return;
+        }
+        
+        const sessionDoc = sessionsQuery.docs[0];
+        const sessionData = sessionDoc.data();
+        
+        // Check if session matches current module
+        const moduleMapping = {
+            'hci2': 'HCI2',
+            'dev2': 'DES2', 
+            'tep1': 'TEP1',
+            'inf2': 'INF2'
+        };
+        
+        if (sessionData.moduleId !== moduleMapping[currentModule]) {
+            hideLoading();
+            showError('This PIN is not for the selected module.');
+            return;
+        }
+        
+        // Check if student already registered for this session
+        const existingRegistration = await db.collection('sessions')
+            .doc(sessionDoc.id)
+            .collection('registrations')
+            .where('studentId', '==', studentId)
+            .get();
+        
+        if (!existingRegistration.empty) {
+            hideLoading();
+            showError('You have already submitted attendance for this session.');
+            return;
+        }
+        
+        // Submit attendance
+        await db.collection('sessions')
+            .doc(sessionDoc.id)
+            .collection('registrations')
+            .add({
+                studentName: studentName,
+                studentId: studentId,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                moduleId: sessionData.moduleId
+            });
+        
+        hideLoading();
+        showSuccess('Attendance submitted successfully!');
+        
+        // Close form after success
+        setTimeout(() => {
+            closeAttendanceOverlay();
+        }, 2000);
+        
+    } catch (error) {
+        hideLoading();
+        console.error('Error submitting attendance:', error);
+        showError('Failed to submit attendance. Please try again.');
+    }
+});
+
+// Utility functions
+function showError(message) {
+    formError.textContent = message;
+    formSuccess.textContent = '';
+    formError.style.display = 'block';
+}
+
+function showSuccess(message) {
+    formSuccess.textContent = message;
+    formError.textContent = '';
+    formSuccess.style.display = 'block';
+}
+
+function showLoading(message) {
+    document.getElementById('overlay-description').textContent = message;
+    loadingOverlay.classList.remove('hidden');
+}
+
+function hideLoading() {
+    loadingOverlay.classList.add('hidden');
+}
+
+  </script>
+</body>
+</html>

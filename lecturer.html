@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Class Register</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="index.css">
+        <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+        <header class="container">
+      <nav>
+        <div class="nav-left">
+          <strong>EDUTEND</strong>
+        </div>
+        <div class="nav-right">
+          <a href="#" class="toggle" id="menu-toggle">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="32px"
+              width="42px"
+              viewBox="0 -960 960 960"
+              fill="#fff"
+            >
+              <g transform="scale(-1, 1) translate(-960, 0)">
+                <path d="M180-390v-0h450v60H180Zm0-190v-40h600v60H180Z" />
+              </g>
+            </svg>
+
+          </a>
+        </div>
+      </nav>
+  </header>
+
+    <div id="app" class="container">
+            <div class="hero-text">
+      <h1>Don't settle for ordinary.</h1>
+      <p>Easily manage your studies anywhere.</p>
+    </div>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="page">
+            <h1>Lecturer Login</h1>
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" id="email" class="form-input" value="lecturer@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" class="form-input" value="password123">
+            </div>
+            <button id="loginButton" class="btn btn-primary">Sign In</button>
+            <p id="loginError"></p>
+            <div id="userIdDisplay">User ID: Not signed in</div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page hidden">
+           <div class="page-header">
+                
+                <button id="logoutButton" style="display: none;" class="btn btn-danger">Logout</button>
+            </div>
+            <div id="moduleList">
+                <!-- Module cards are injected here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Live Session Page -->
+        <div id="liveSessionPage" class="page hidden">
+            <div class="page-header">
+       
+                    <div style="background-color: #ffffff;" class="back-to-dashboard"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000"><path d="m294.92-450 227.85 227.85L480-180 180-480l300-300 42.77 42.15L294.92-510H780v60H294.92Z"/></svg></div>
+                <h1 id="liveSessionModuleTitle">Live Session</h1>
+                <div></div> <!-- Spacer -->
+            </div>
+            <div class="live-session-layout">
+                <div class="panel">
+                    <h2>Session Details</h2>
+                    <p class="form-label">Class PIN</p>
+                    <div id="sessionPin">------</div>
+                    <div id="qrCodeContainer">
+                        <div id="qrCode"></div>
+                    </div>
+                    <div id="sessionTimer">Expires in: <strong>--:--</strong></div>
+                    <div class="time-controls">
+                        <p>Session Duration</p>
+                        <div class="time-buttons">
+                            <button class="btn btn-secondary time-btn" data-time="300">5 min</button>
+                            <button class="btn btn-primary time-btn" data-time="600">10 min</button>
+                            <button class="btn btn-secondary time-btn" data-time="1200">20 min</button>
+                        </div>
+                    </div>
+                     <button id="createSessionButton" class="btn btn-primary ovi" style="margin-top: 1rem; background-color: #bdc1c6;">Create Session</button>
+                     <button id="endSessionButton" class="btn btn-danger hidden ovi" style="margin-top: 1rem;" >End Session Now</button>
+                </div>
+                <div class="panel" style="background-color: rgb(210, 210, 210);">
+                    <h2>Live Submissions (<span id="studentCount">0</span>)</h2>
+                    <ul id="studentList" class="data-list">
+                        <!-- Student submissions will appear here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+            <!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <button class="close-btn" id="closeSidebar" aria-label="Close Sidebar"><svg xmlns="http://www.w3.org/2000/svg" height="30px" viewBox="0 -960 960 960" width="30px" fill="#e3e3e3"><path d="m251.33-204.67-46.66-46.66L433.33-480 204.67-708.67l46.66-46.66L480-526.67l228.67-228.66 46.66 46.66L526.67-480l228.66 228.67-46.66 46.66L480-433.33 251.33-204.67Z"/></svg></button>
+  
+  <ul>
+    <li><a href="#" >Profile</a></li>
+    <li><a href="#" >Settings</a></li>
+    <li><a href="#" >Main Menu</a></li>
+    <div class="bottom">
+        <button id="logoutButton" class="btn btn-danger">Logout</button>
+    </div>
+
+    
+  </ul>
+</div>
+        
+        <!-- Past Sessions Page -->
+        <div id="pastSessionsPage" class="page hidden">
+            <div class="page-header">
+                   <div style="background-color: #000;" class="back-to-dashboard"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#fff"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg></div>
+                 <h1 id="pastSessionsTitle">Past Sessions</h1>
+                 <div></div>
+            </div>
+            <div class="panel">
+                <ul id="pastSessionsList" class="data-list">
+                    <!-- List of past sessions will be injected here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Past Session Details Page -->
+        <div id="pastSessionDetailsPage" class="page hidden">
+            <div class="page-header">
+                 <button id="backToPastSessions" class="btn btn-secondary">&larr; Back</button>
+                 <h1 id="pastSessionDetailsTitle">Session Details</h1>
+                 <div></div>
+            </div>
+            <div class="panel">
+                 <h2 id="pastSessionDetailsDate"></h2>
+                 <ul id="pastSessionStudentList" class="data-list">
+                    <!-- List of students for a specific past session -->
+                 </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Active Session Modal -->
+    <div id="activeSessionModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="modalCloseButton" class="modal-close">&times;</button>
+            <h2 id="modalModuleTitle">Active Session</h2>
+            <p class="form-label">Class PIN</p>
+            <div id="modalPin" style="font-size: 2rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 1rem;"></div>
+            <div id="modalQrCode" style="display: flex; justify-content: center;"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+     <script type="module" src="app.js"></script>
+ 
+</body>
+</html>
