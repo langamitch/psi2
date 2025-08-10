@@ -193,6 +193,19 @@ const auth = firebase.auth();
 // Ensure auth persistence
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 
+
+async function ensureStudentSignedIn(studentId) {
+  const expectedEmail = `${studentId}@mywsu.ac.za`.toLowerCase();
+  const current = auth.currentUser;
+  if (current && current.email && current.email.toLowerCase() === expectedEmail) return;
+  if (current) {
+    try { await auth.signOut(); } catch (_) {}
+  }
+  try {
+    await auth.signInWithEmailAndPassword(expectedEmail, 'testing');
+  } catch (err) {
+    throw new Error('Account not found or wrong credentials. Please contact admin.');
+=======
 // --- Student Auth Redirect ---
 function requireAuthOrRedirect() {
   const unsub = auth.onAuthStateChanged((user) => {
@@ -212,6 +225,7 @@ async function ensureStudentSignedIn(studentId) {
   if (!current) throw new Error('You must be signed in to submit attendance.');
   if (!current.email || current.email.toLowerCase() !== expectedEmail) {
     throw new Error('Signed-in account does not match the provided student number.');
+
   }
 }
 
@@ -327,7 +341,11 @@ attendanceForm.addEventListener('submit', async (e) => {
     }
     
     try {
+
+        showLoading('Signing in...');
+=======
         showLoading('Validating account...');
+
         await ensureStudentSignedIn(studentId);
         await ensureStudentProfile(studentId, studentName);
 
@@ -439,8 +457,6 @@ function hideLoading() {
     loadingOverlay.classList.add('hidden');
 }
 
-// Initialize computed email preview once
-renderComputedEmail();
 
   </script>
 </body>

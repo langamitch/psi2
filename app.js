@@ -105,15 +105,7 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    try {
-                        await createUserWithEmailAndPassword(auth, email, password);
-                    } catch (creationError) {
-                        loginErrorEl.textContent = creationError.message;
-                    }
-                } else {
-                    loginErrorEl.textContent = error.message;
-                }
+                loginErrorEl.textContent = 'Invalid email or password.';
             }
         });
 
