@@ -15,25 +15,6 @@
 </head>
 <body>
 
-    <!-- Student Auth Gate -->
-    <div id="studentAuth" class="auth-container">
-      <form id="studentLoginForm" class="auth-form">
-        <h2>Student Sign In</h2>
-        <div class="form-group">
-          <label for="studentNumberInput" class="form-label">Student Number</label>
-          <input type="text" id="studentNumberInput" class="form-input" placeholder="e.g., 230829279" required>
-        </div>
-        <div class="form-group">
-          <label style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="appendDomain" checked>
-            Use @mywsu.ac.za
-          </label>
-          <div id="computedEmail" class="form-label" style="margin-top:6px; color:#5f6368; font-size:0.9rem;"></div>
-        </div>
-        <button type="submit" id="studentLoginButton" class="btn btn-primary auth-btn">Continue</button>
-        <div id="studentLoginError" class="error-message" style="margin-top:8px;"></div>
-      </form>
-    </div>
 
     <header class="container">
         <nav>
@@ -212,71 +193,25 @@ const auth = firebase.auth();
 // Ensure auth persistence
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 
-// --- Student Auth Gate Logic ---
-const authContainer = document.getElementById('studentAuth');
-const studentLoginForm = document.getElementById('studentLoginForm');
-const studentNumberInput = document.getElementById('studentNumberInput');
-const appendDomainCheckbox = document.getElementById('appendDomain');
-const computedEmailLabel = document.getElementById('computedEmail');
-const studentLoginError = document.getElementById('studentLoginError');
-
-const pageSections = [document.querySelector('header'), document.querySelector('main'), document.querySelector('footer')];
-function setAppVisible(visible) {
-  pageSections.forEach(el => el && el.classList.toggle('hidden', !visible));
+// --- Student Auth Redirect ---
+function requireAuthOrRedirect() {
+  const unsub = auth.onAuthStateChanged((user) => {
+    if (user) {
+      // allow
+    } else {
+      window.location.replace('student-login.html');
+    }
+    unsub();
+  });
 }
-
-function renderComputedEmail() {
-  const num = (studentNumberInput.value || '').trim();
-  const email = appendDomainCheckbox.checked ? `${num}@mywsu.ac.za` : num;
-  computedEmailLabel.textContent = num ? `Signing in as: ${email}` : '';
-}
-
-studentNumberInput.addEventListener('input', renderComputedEmail);
-appendDomainCheckbox.addEventListener('change', renderComputedEmail);
-
-// Hide app content until auth state resolves
-setAppVisible(false);
-
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    authContainer.classList.add('hidden');
-    setAppVisible(true);
-  } else {
-    // If not authenticated, redirect to standalone login page
-    window.location.href = 'student-login.html';
-  }
-});
-
-studentLoginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  studentLoginError.textContent = '';
-  const num = (studentNumberInput.value || '').trim();
-  if (!num) {
-    studentLoginError.textContent = 'Please enter your student number.';
-    return;
-  }
-  const email = appendDomainCheckbox.checked ? `${num}@mywsu.ac.za` : num;
-  try {
-    showLoading('Signing in...');
-    await auth.signInWithEmailAndPassword(email.toLowerCase(), 'testing');
-    hideLoading();
-  } catch (err) {
-    hideLoading();
-    studentLoginError.textContent = err && err.message ? err.message : 'Sign-in failed. Please contact admin.';
-  }
-});
+requireAuthOrRedirect();
 
 async function ensureStudentSignedIn(studentId) {
   const expectedEmail = `${studentId}@mywsu.ac.za`.toLowerCase();
   const current = auth.currentUser;
-  if (current && current.email && current.email.toLowerCase() === expectedEmail) return;
-  if (current) {
-    try { await auth.signOut(); } catch (_) {}
-  }
-  try {
-    await auth.signInWithEmailAndPassword(expectedEmail, 'testing');
-  } catch (err) {
-    throw new Error('Account not found or wrong credentials. Please contact admin.');
+  if (!current) throw new Error('You must be signed in to submit attendance.');
+  if (!current.email || current.email.toLowerCase() !== expectedEmail) {
+    throw new Error('Signed-in account does not match the provided student number.');
   }
 }
 
@@ -392,7 +327,7 @@ attendanceForm.addEventListener('submit', async (e) => {
     }
     
     try {
-        showLoading('Signing in...');
+        showLoading('Validating account...');
         await ensureStudentSignedIn(studentId);
         await ensureStudentProfile(studentId, studentName);
 
