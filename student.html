@@ -130,7 +130,6 @@
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="overlay hidden">
     <div class="overlay-content" style="width: fit-content;">
-        <img src="Rounded blocks.gif" alt="" style="width: 30px; height: 30px;">
         <p id="overlay-description" style="margin-top: 10px;">Processing...</p>
     </div>
 </div>
@@ -193,31 +192,16 @@ const auth = firebase.auth();
 // Ensure auth persistence
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 
-
-async function ensureStudentSignedIn(studentId) {
-  const expectedEmail = `${studentId}@mywsu.ac.za`.toLowerCase();
-  const current = auth.currentUser;
-  if (current && current.email && current.email.toLowerCase() === expectedEmail) return;
-  if (current) {
-    try { await auth.signOut(); } catch (_) {}
-  }
-  try {
-    await auth.signInWithEmailAndPassword(expectedEmail, 'testing');
-  } catch (err) {
-    throw new Error('Account not found or wrong credentials. Please contact admin.');
-=======
-// --- Student Auth Redirect ---
-function requireAuthOrRedirect() {
-  const unsub = auth.onAuthStateChanged((user) => {
-    if (user) {
-      // allow
-    } else {
+// Redirect to login if not authenticated
+(function requireAuthOrRedirect(){
+  const unsubscribe = auth.onAuthStateChanged((user) => {
+    if (!user) {
       window.location.replace('student-login.html');
     }
-    unsub();
+    if (typeof unsubscribe === 'function') unsubscribe();
   });
-}
-requireAuthOrRedirect();
+})();
+
 
 async function ensureStudentSignedIn(studentId) {
   const expectedEmail = `${studentId}@mywsu.ac.za`.toLowerCase();
@@ -225,7 +209,6 @@ async function ensureStudentSignedIn(studentId) {
   if (!current) throw new Error('You must be signed in to submit attendance.');
   if (!current.email || current.email.toLowerCase() !== expectedEmail) {
     throw new Error('Signed-in account does not match the provided student number.');
-
   }
 }
 
@@ -342,8 +325,6 @@ attendanceForm.addEventListener('submit', async (e) => {
     
     try {
 
-        showLoading('Signing in...');
-=======
         showLoading('Validating account...');
 
         await ensureStudentSignedIn(studentId);
