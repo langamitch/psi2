@@ -187,6 +187,40 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
+
+// Ensure auth persistence
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+
+async function ensureStudentSignedIn(studentId) {
+  const expectedEmail = `${studentId}@mywsu.ac.za`.toLowerCase();
+  const current = auth.currentUser;
+  if (current && current.email && current.email.toLowerCase() === expectedEmail) return;
+  if (current) {
+    try { await auth.signOut(); } catch (_) {}
+  }
+  try {
+    await auth.signInWithEmailAndPassword(expectedEmail, 'testing');
+  } catch (err) {
+    throw new Error('Account not found or wrong credentials. Please contact admin.');
+  }
+}
+
+async function ensureStudentProfile(studentId, studentName) {
+  const current = auth.currentUser;
+  if (!current) throw new Error('Not authenticated.');
+  const docRef = db.collection('students').doc(current.uid);
+  const snap = await docRef.get();
+  if (!snap.exists) {
+    await docRef.set({
+      studentId: studentId,
+      name: studentName,
+      email: current.email || `${studentId}@mywsu.ac.za`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      modules: ['HCI2','DES2','TEP1','INF2']
+    });
+  }
+}
 
 // Module data mapping
 const moduleData = {
@@ -284,22 +318,31 @@ attendanceForm.addEventListener('submit', async (e) => {
     }
     
     try {
-        showLoading('Submitting attendance...');
+        showLoading('Signing in...');
+        await ensureStudentSignedIn(studentId);
+        await ensureStudentProfile(studentId, studentName);
+
+        document.getElementById('overlay-description').textContent = 'Submitting attendance...';
         
-        // Find active session with the provided PIN
+        // Find session with the provided PIN
         const sessionsQuery = await db.collection('sessions')
             .where('pin', '==', sessionPin)
-            .where('expiresAt', '>', new Date())
             .get();
         
         if (sessionsQuery.empty) {
             hideLoading();
-            showError('Invalid PIN or session has expired.');
+            showError('Invalid PIN.');
             return;
         }
         
         const sessionDoc = sessionsQuery.docs[0];
         const sessionData = sessionDoc.data();
+        const expires = sessionData.expiresAt && typeof sessionData.expiresAt.toDate === 'function' ? sessionData.expiresAt.toDate() : new Date(sessionData.expiresAt);
+        if (!expires || expires.getTime() <= Date.now()) {
+            hideLoading();
+            showError('Session has expired.');
+            return;
+        }
         
         // Check if session matches current module
         const moduleMapping = {
@@ -350,7 +393,7 @@ attendanceForm.addEventListener('submit', async (e) => {
     } catch (error) {
         hideLoading();
         console.error('Error submitting attendance:', error);
-        showError('Failed to submit attendance. Please try again.');
+        showError(error.message || 'Failed to submit attendance. Please try again.');
     }
 });
 

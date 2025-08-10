@@ -181,7 +181,7 @@
         // --- Session Logic ---
         const listenForActiveSession = (moduleId) => {
             const sessionsRef = collection(db, 'sessions');
-            const q = query(sessionsRef, where("moduleId", "==", moduleId), where("expiresAt", ">", new Date()));
+            const q = query(sessionsRef, where("moduleId", "==", moduleId));
 
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const card = document.querySelector(`.module-card[data-module-id="${moduleId}"]`);
@@ -191,12 +191,18 @@
                 if (existingIndicator) existingIndicator.remove();
                 delete card.dataset.activeSessionId;
 
-                if (!snapshot.empty) {
-                    const session = snapshot.docs[0];
+                const now = new Date();
+                const activeSessionDoc = snapshot.docs.find(d => {
+                    const data = d.data();
+                    const expires = data.expiresAt && typeof data.expiresAt.toDate === 'function' ? data.expiresAt.toDate() : data.expiresAt;
+                    return expires && new Date(expires).getTime() > now.getTime();
+                });
+
+                if (activeSessionDoc) {
                     const indicator = document.createElement('div');
                     indicator.className = 'card-active-indicator';
                     card.prepend(indicator);
-                    card.dataset.activeSessionId = session.id;
+                    card.dataset.activeSessionId = activeSessionDoc.id;
                 }
             });
             activeListeners.push(unsubscribe);
@@ -317,11 +323,7 @@
             showPage('pastSessions');
 
             const sessionsRef = collection(db, 'sessions');
-            const q = query(sessionsRef, 
-                where("moduleId", "==", module.id), 
-                where("expiresAt", "<", new Date()),
-                orderBy("expiresAt", "desc")
-            );
+            const q = query(sessionsRef, where("moduleId", "==", module.id));
 
             const querySnapshot = await getDocs(q);
             pastSessionsListEl.innerHTML = '';
@@ -330,16 +332,34 @@
                 return;
             }
 
-            for (const sessionDoc of querySnapshot.docs) {
-                const session = { id: sessionDoc.id, ...sessionDoc.data() };
+            const now = new Date();
+            const sessions = querySnapshot.docs
+                .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+                .filter(s => {
+                    const expires = s.expiresAt && typeof s.expiresAt.toDate === 'function' ? s.expiresAt.toDate() : new Date(s.expiresAt);
+                    return expires && new Date(expires).getTime() < now.getTime();
+                })
+                .sort((a, b) => {
+                    const aExp = a.expiresAt && typeof a.expiresAt.toDate === 'function' ? a.expiresAt.toDate() : new Date(a.expiresAt);
+                    const bExp = b.expiresAt && typeof b.expiresAt.toDate === 'function' ? b.expiresAt.toDate() : new Date(b.expiresAt);
+                    return bExp.getTime() - aExp.getTime();
+                });
+
+            if (sessions.length === 0) {
+                pastSessionsListEl.innerHTML = '<li>No past sessions found.</li>';
+                return;
+            }
+
+            for (const session of sessions) {
                 const registrationsRef = collection(db, 'sessions', session.id, 'registrations');
                 const registrationsSnap = await getDocs(registrationsRef);
                 
                 const li = document.createElement('li');
                 li.className = 'list-item-clickable';
+                const createdAtDate = session.createdAt && typeof session.createdAt.toDate === 'function' ? session.createdAt.toDate() : new Date(session.createdAt);
                 li.innerHTML = `
                     <div>
-                        <div class="list-item-main">${session.createdAt.toDate().toLocaleDateString()}</div>
+                        <div class="list-item-main">${createdAtDate.toLocaleDateString()}</div>
                         <div class="list-item-sub">${registrationsSnap.size} student(s) registered</div>
                     </div>
                     <span class="list-item-arrow">&rarr;</span>
@@ -351,7 +371,8 @@
         
         const showPastSessionDetails = async (session, moduleName) => {
             pastSessionDetailsTitleEl.textContent = moduleName;
-            pastSessionDetailsDateEl.textContent = `Registered Students for ${session.createdAt.toDate().toLocaleString()}`;
+            const createdAtDate = session.createdAt && typeof session.createdAt.toDate === 'function' ? session.createdAt.toDate() : new Date(session.createdAt);
+            pastSessionDetailsDateEl.textContent = `Registered Students for ${createdAtDate.toLocaleString()}`;
             pastSessionStudentListEl.innerHTML = '<li>Loading...</li>';
             showPage('pastSessionDetails');
             
@@ -368,7 +389,8 @@
             snapshot.forEach(doc => {
                 const { studentName, timestamp } = doc.data();
                 const li = document.createElement('li');
-                li.innerHTML = `<span class="list-item-main">${studentName}</span><span class="list-item-sub">${timestamp.toDate().toLocaleTimeString()}</span>`;
+                const ts = timestamp && typeof timestamp.toDate === 'function' ? timestamp.toDate().toLocaleTimeString() : '';
+                li.innerHTML = `<span class="list-item-main">${studentName}</span><span class="list-item-sub">${ts}</span>`;
                 pastSessionStudentListEl.appendChild(li);
             });
         };
@@ -414,4 +436,4 @@
         // --- Initial Load ---
         showPage('login');
 
-   
+        
